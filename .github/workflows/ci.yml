@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  backend-build:
+    name: Build backend image
+    if: github.head_ref == 'backend' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: docker build -f docker/Dockerfile.fastapi -t lts-api:${{ github.sha }} .
+
+  frontend-build:
+    name: Build frontend dist
+    if: github.head_ref == 'frontend' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: Frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: Frontend
+        run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: Frontend/dist
+          if-no-files-found: error
+
