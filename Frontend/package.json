@@ -1,0 +1,27 @@
+{
+  "name": "lts-map-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vue 3 即時 GNSS 路徑地圖 — https://lts-map.personalwork.tw",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "^3.5.13",
+    "leaflet": "^1.9.4"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.15",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.3",
+    "vue-tsc": "^2.1.10"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,38 @@
+# =============================================================================
+# Backend Bridge — Python 依賴
+# 角色：訂閱 ROS 2 /gps/fix → 轉 JSON → WebSocket 推送前端
+# 執行環境：建議以 ROS 2 映像為基底（內含 rclpy / sensor_msgs），再 pip install -r
+# =============================================================================
+
+# --- Web 框架與 ASGI 伺服器 ---
+# FastAPI：HTTP + WebSocket 端點；作為 ROS 與瀏覽器之間的橋接層
+fastapi>=0.115.0,<1.0.0
+
+# Uvicorn：ASGI server；[standard] 含 websockets / httptools / watchfiles，利於 WS 推流與開發熱重載
+uvicorn[standard]>=0.32.0,<1.0.0
+
+# --- 資料契約（Pydantic）---
+# 對齊 Roadmap：GNSS_data / data_transfer_formatting 等模型驗證與 JSON schema
+pydantic>=2.9.0,<3.0.0
+
+# 從環境變數／.env 讀取設定（Topic 名稱、WS path、CORS、可選 rate 相關設定）
+pydantic-settings>=2.6.0,<3.0.0
+
+# --- WebSocket 底層（顯式列出，便於文件與版本鎖定）---
+# FastAPI / Uvicorn 會用到；5Hz 座標廣播不需額外 MQ
+websockets>=14.0,<16.0
+
+# =============================================================================
+# 非 pip 安裝（由 ROS 2 發行版 / Docker 基底映像提供，勿寫入 pip）
+# -----------------------------------------------------------------------------
+# rclpy          — ROS 2 Python client；進程內嵌 Node，訂閱 /gps/fix
+# sensor_msgs    — NavSatFix 訊息型別
+# 安裝示例（映像內）：apt install ros-${ROS_DISTRO}-rclpy ros-${ROS_DISTRO}-sensor-msgs
+# =============================================================================
+
+# =============================================================================
+# 選配（首版可不裝；擴展多消費者／斷線緩衝時再開）
+# -----------------------------------------------------------------------------
+# redis>=5.0.0          # Pub/Sub 或 Streams：跨進程解耦、短暫斷線緩衝
+# # aio-pika / pika     # 若改 RabbitMQ 再選用
+# =============================================================================

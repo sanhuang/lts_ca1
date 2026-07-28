@@ -1,0 +1,40 @@
+# FastAPI Bridge — 訂閱 /gps/fix → WebSocket（內嵌 rclpy）
+# build context: 專案根目錄
+# docker build -f docker/Dockerfile.fastapi -t lts-api .
+
+FROM ros:humble-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    ROS_DISTRO=humble \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-venv \
+    ros-humble-sensor-msgs \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY Backend/requirements.txt /app/requirements.txt
+RUN pip3 install --no-cache-dir -r /app/requirements.txt
+
+COPY Backend/app /app/app
+COPY Backend/.env.example /app/.env.example
+
+COPY docker/entrypoint-fastapi.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENV APP_PUBLIC_HOST=lts-api.personalwork.tw \
+    WS_PATH=/ws \
+    ROS_TOPIC=/gps/fix \
+    ROS_DOMAIN_ID=0 \
+    CORS_ORIGINS=https://lts-map.personalwork.tw,http://localhost:5173,http://localhost:8080 \
+    UVICORN_HOST=0.0.0.0 \
+    UVICORN_PORT=8000
+
+EXPOSE 8000
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

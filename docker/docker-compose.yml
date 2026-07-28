@@ -1,0 +1,64 @@
+# 一鍵啟動：Publisher + Backend + Frontend
+# 用法（專案根目錄）：
+#   docker compose -f docker/docker-compose.yml up --build
+
+services:
+  publisher:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ros2
+    image: lts-rosnode:local
+    container_name: lts-rosnode
+    environment:
+      ROS_DOMAIN_ID: "0"
+      RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+      PUBLISH_RATE_HZ: "5.0"
+      GPS_CSV: /app/path_data.csv
+      ROS_TOPIC: /gps/fix
+    networks:
+      - ltsnet
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.fastapi
+    image: lts-api:local
+    container_name: lts-api
+    environment:
+      ROS_DOMAIN_ID: "0"
+      RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+      APP_PUBLIC_HOST: lts-api.personalwork.tw
+      WS_PATH: /ws
+      ROS_TOPIC: /gps/fix
+      CORS_ORIGINS: "https://lts-map.personalwork.tw,http://localhost:5173,http://localhost:8080"
+    ports:
+      - "8000:8000"
+    networks:
+      - ltsnet
+    depends_on:
+      - publisher
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.vue3
+      args:
+        # 瀏覽器在宿主機開啟，故 WS 指宿主映射埠
+        VITE_WS_URL: ws://localhost:8000/ws
+        VITE_APP_ORIGIN: http://localhost:8080
+    image: lts-map:local
+    container_name: lts-map
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - ltsnet
+    restart: unless-stopped
+
+networks:
+  ltsnet:
+    driver: bridge
+    # DDS discovery 若在 bridge 失敗，可改用 network_mode: host（僅 Linux）

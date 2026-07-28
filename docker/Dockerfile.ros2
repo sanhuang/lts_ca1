@@ -1,0 +1,30 @@
+# ROS 2 GNSS Publisher — 讀 CSV，5Hz 發佈 NavSatFix → /gps/fix
+# build context: 專案根目錄
+# docker build -f docker/Dockerfile.ros2 -t lts-rosnode .
+
+FROM ros:humble-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    ROS_DISTRO=humble \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    ros-humble-sensor-msgs \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY ROS2/ /app/
+
+# 以非 interactive 方式 source ROS 後啟動
+COPY docker/entrypoint-ros2.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENV PUBLISH_RATE_HZ=5.0 \
+    GPS_CSV=/app/path_data.csv \
+    ROS_TOPIC=/gps/fix \
+    ROS_DOMAIN_ID=0
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["python3", "/app/gps_publisher.py"]

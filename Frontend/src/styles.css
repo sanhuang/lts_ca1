@@ -1,0 +1,31 @@
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+#map {
+  height: calc(100% - 48px);
+  width: 100%;
+}
+
+.toolbar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 14px;
+}
+
+.status-ok {
+  color: #4ade80;
+}
+
+.status-bad {
+  color: #f87171;
+}
