@@ -1,6 +1,6 @@
 # DevOps — 艦隊雲地部署與交付設計
 
-> 對應面試 Option：船廠研發 → 遠端艦隊部署的 CI/CD，以及雲端／地端系統架構。  
+> 船廠研發 → 遠端艦隊部署的 CI/CD，以及雲端／地端系統架構。
 > 本目錄為**文字 + 圖表**交付，不強制實作 Pipeline 程式碼。
 
 ---
@@ -11,7 +11,6 @@
 |------|------|
 | [README.md](./README.md) | 本頁：範圍、CI/CD 總覽、與核心 demo 的關係 |
 | [archit.md](./archit.md) | 雲地架構 Mermaid 圖、網路分區、Defense in Depth、設計說明 |
-| [Advance.md](./Advance.md) | 延伸：持久化 DB、認證、多載具；**現行需求如何做 HA** |
 
 ---
 
@@ -28,7 +27,7 @@
 GNSS Publisher (ROS2) → /gps/fix → FastAPI Bridge → WebSocket → Vue 地圖
 ```
 
-上雲／地端拆分、Nginx、DB、認證等屬**產品化／艦隊化**延伸，見 `archit.md`、`Advance.md`。
+上雲／地端拆分、Nginx、DB，見 `archit.md`。
 
 ---
 
@@ -75,13 +74,13 @@ flowchart LR
 
 ### 建議階段
 
-1. **Build**：多階段 Dockerfile 建 Publisher / Backend / Frontend 映像  
-2. **Verify**：測試 + SAST/SCA + 映像掃描  
-3. **Sign & Store**：簽章後推 Registry  
-4. **Promote**：dev → staging（岸端模擬船）→ production（指定船艦）  
-5. **Operate**：健康檢查、指標、稽核日誌、一鍵回滾  
+1. **Build**：多階段 Dockerfile 建 Publisher / Backend / Frontend 映像
+2. **Verify**：測試 + SAST/SCA + 映像掃描
+3. **Sign & Store**：簽章後推 Registry
+4. **Promote**：dev → staging（岸端模擬船）→ production（指定船艦）
+5. **Operate**：健康檢查、指標、稽核日誌、一鍵回滾
 
-細部元件與信任邊界見 [archit.md](./archit.md)；HA 與多載具延伸見 [Advance.md](./Advance.md)。
+細部元件與信任邊界見 [archit.md](./archit.md)。
 
 ---
 
@@ -91,15 +90,6 @@ flowchart LR
 |------|----------|------|
 | **Nginx** | 雲 DMZ 與／或地端入口 | TLS 終止、反向代理、靜態前端、WS Upgrade |
 | **AP** | 雲（營運 API）+ 地端（即時 Bridge） | 地端 AP 訂閱 ROS、推 WS；雲 AP 管帳號、艦隊清單、歷史查詢 |
-| **DB** | 地端內網為主（熱資料）；雲可放冷資料／匯總 | 白名單存取；見 Advance HA |
+| **DB** | 地端內網為主（熱資料）；雲可放冷資料／匯總 | 白名單存取；HA 見 `archit.md` |
 | **ROS Publisher** | **僅地端**（船載／模擬機） | 低延遲、不依賴公網 |
 | **CI/CD / Registry** | 雲或船廠內網 | 控制面與產物庫 |
-
----
-
-## 閱讀順序建議（面試口述）
-
-1. 先講核心 demo 資料流（單機 compose）  
-2. 用 `archit.md` 講「哪些上雲、哪些留船、分區與縱深防禦」  
-3. 用本 README 講 CI/CD 四面向與簽章下發  
-4. 用 `Advance.md` 講 HA，以及 DB／認證／多載具如何長上去  
