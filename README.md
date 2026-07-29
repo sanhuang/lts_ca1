@@ -54,9 +54,9 @@
       3. 生成meraid架構圖描述資料流與[png]系統元件架構圖
 2. 個人化技能, 建立專案架構
    1. pydantic資料模型：
-      1. [GNSS_data]
-      2. [data_transfer_formatting]
-      3. [GPS_path_data]
+      1. [GNSS_data] → `GnssFixMessage`
+      2. [data_transfer_formatting] → `WsEnvelope`（`{ type: "gnss_fix", data }`）
+      3. [GPS_path_data] → `GpsPathPoint` / `GpsPathData`（CSV `latitude`,`longitude`）
    2. Dockerfile
       1. Publisher(ROS2模擬)
       2. Backend(接收與發送)
@@ -105,15 +105,20 @@ Dockerfile 與 Compose 位於 [`docker/`](./docker/)。**請在專案根目錄**
 ### 一鍵啟動（建議）
 
 ```bash
-# 建置並啟動 Publisher + Backend + Frontend
-docker compose -f docker/docker-compose.yml up --build
+make up          # 等同 docker compose -f docker/docker-compose.yml up --build
+make up-d        # 背景啟動
+make logs / make down
+```
 
-# 背景執行
-docker compose -f docker/docker-compose.yml up --build -d
+### 本機單獨啟動 Vue dist（不經 Docker）
 
-# 查看日誌 / 停止
-docker compose -f docker/docker-compose.yml logs -f
-docker compose -f docker/docker-compose.yml down
+需本機 Node ≥ 20；產出 `Frontend/dist` 後以 vite preview 提供靜態站（預設埠 8080，WS 指 `ws://localhost:8000/ws`，後端需另外已啟動）：
+
+```bash
+make frontend              # npm install → build → preview
+make vue-build        # 僅產出 dist
+make vue-preview      # 僅服務既有 dist
+# 可覆寫：make frontend VITE_WS_URL=ws://localhost:8000/ws FRONTEND_PORT=8080
 ```
 
 啟動後本機位址：
@@ -156,5 +161,5 @@ docker run --rm -p 8000:8000 --network lts_ca1_ltsnet -e ROS_DOMAIN_ID=0 lts-api
 docker run --rm -p 8080:80 lts-map:local
 ```
 
-> 網路名稱以 `docker network ls` 為準（compose 專案前綴可能不同）。日常開發優先用 `docker compose ... up`。  
+> 網路名稱以 `docker network ls` 為準（compose 專案前綴可能不同）。日常開發優先用 `docker compose ... up`。
 > 更完整說明見 [`docker/README.md`](./docker/README.md)。

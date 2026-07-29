@@ -1,55 +1,102 @@
+# LTS_CA1 CI
+# - PR → main：驗證建置 3 個 Docker image
+# - merge 進 main：遠端建置並打包 .tar.gz，以 Actions Artifact 提供下載
+# - 推送 tag v*：建立 GitHub Release，並將 3 個 image 附在 Release Assets
 name: ci
 
 on:
   pull_request:
     branches:
       - main
-    types:
-      - opened
-      - synchronize
-      - reopened
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  ROS_IMAGE: lts-rosnode
+  API_IMAGE: lts-api
+  MAP_IMAGE: lts-map
 
 jobs:
-  backend-build:
-    name: Build backend image
-    if: github.head_ref == 'backend' && github.base_ref == 'main'
+  build-images:
+    name: Build three Docker images
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Build backend Docker image
-        run: docker build -f docker/Dockerfile.fastapi -t lts-api:${{ github.sha }} .
+      - name: Resolve image tag
+        id: meta
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "tag=${GITHUB_SHA::12}" >> "${GITHUB_OUTPUT}"
+          fi
 
-  frontend-build:
-    name: Build frontend dist
-    if: github.head_ref == 'frontend' && github.base_ref == 'main'
-    runs-on: ubuntu-latest
+      - name: Build ROS 2 publisher image
+        run: |
+          docker build -f docker/Dockerfile.ros2 \
+            -t "${ROS_IMAGE}:${{ steps.meta.outputs.tag }}" .
 
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - name: Build FastAPI backend image
+        run: |
+          docker build -f docker/Dockerfile.fastapi \
+            -t "${API_IMAGE}:${{ steps.meta.outputs.tag }}" .
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: Frontend/package-lock.json
+      - name: Build Vue 3 frontend image
+        run: |
+          docker build -f docker/Dockerfile.vue3 \
+            --build-arg VITE_WS_URL=wss://lts-api.personalwork.tw/ws \
+            --build-arg VITE_APP_ORIGIN=https://lts-map.personalwork.tw \
+            -t "${MAP_IMAGE}:${{ steps.meta.outputs.tag }}" .
 
-      - name: Install frontend dependencies
-        working-directory: Frontend
-        run: npm install
+      - name: Export images as tar.gz
+        if: github.event_name == 'push'
+        run: |
+          mkdir -p dist-images
+          TAG="${{ steps.meta.outputs.tag }}"
+          docker save "${ROS_IMAGE}:${TAG}" | gzip > "dist-images/${ROS_IMAGE}-${TAG}.tar.gz"
+          docker save "${API_IMAGE}:${TAG}" | gzip > "dist-images/${API_IMAGE}-${TAG}.tar.gz"
+          docker save "${MAP_IMAGE}:${TAG}" | gzip > "dist-images/${MAP_IMAGE}-${TAG}.tar.gz"
+          ls -lh dist-images/
 
-      - name: Build frontend
-        working-directory: Frontend
-        run: npm run build
-
-      - name: Upload dist artifact
+      - name: Upload image artifacts (after merge to main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-dist
-          path: Frontend/dist
+          name: lts-ca1-images-${{ steps.meta.outputs.tag }}
+          path: dist-images/*.tar.gz
+          retention-days: 14
           if-no-files-found: error
 
+      - name: Publish GitHub Release with images
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-images/*.tar.gz
+          generate_release_notes: true
+          body: |
+            ## Docker images
+
+            由此 Release 下載三個 `.tar.gz`，本機載入：
+
+            ```bash
+            gunzip -c lts-rosnode-*.tar.gz | docker load
+            gunzip -c lts-api-*.tar.gz     | docker load
+            gunzip -c lts-map-*.tar.gz     | docker load
+            ```
+
+            | Image | Dockerfile |
+            |-------|------------|
+            | `lts-rosnode` | `docker/Dockerfile.ros2` |
+            | `lts-api` | `docker/Dockerfile.fastapi` |
+            | `lts-map` | `docker/Dockerfile.vue3` |
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
