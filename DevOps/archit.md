@@ -8,7 +8,7 @@
 
 ---
 
-## 1. 設計原則（先講結論）
+## 1. 設計原則
 
 | 原則 | 決策 |
 |------|------|
@@ -18,7 +18,8 @@
 | **分區隔離** | Internet → DMZ（Nginx）→ App → Data；地端 OT／ROS 區與 IT 監控區分離 |
 | **縱深防禦** | TLS、WAF／Rate limit、mTLS／VPN 上雲、最小權限、簽章映像、稽核日誌層層疊加 |
 
-與 Roadmap 分析對齊：**AP 可在雲（介面操作）+ 地端（WS 即時）**；**DB 在地端內網**；瀏覽器經雲 Nginx 進入口後，即時座標可導向地端 WS（或經受控隧道）。
+對齊：**AP 可在雲（介面操作）+ 地端（WS 即時）**；**DB 在地端內網**；
+瀏覽器經雲 Nginx 進入口後，即時座標可導向地端 WS（或經受控隧道）。
 
 ---
 
@@ -114,12 +115,7 @@ sequenceDiagram
   end
 ```
 
-**說明：** 核心 MVP 可無 Nginx／DB（compose 直連 Backend WS）。上圖是**產品化**後的標準路徑：Nginx 做 TLS 與 WS Upgrade；DB 為 Advance 持久化。
-
-> 「雲端儀表板」透過VPN 使用家中m2max docker環境建置Grafana+Prometheus 串接 metric
->> metric要如何後送資料？判斷網路可行、指定service[caddy處理配置！]
-**這段真的面試安排在處理！**
-
+**說明：** 核心 MVP 可無 Nginx／DB（compose 直連 Backend WS）。上圖是**產品化**後的標準路徑：Nginx 做 TLS 與 WS Upgrade；DB 為產品化持久化選配。
 
 ---
 
@@ -184,7 +180,7 @@ flowchart TB
 |------|-------------------|
 | 網路 | 分區、安全組、預設 deny |
 | 邊界 | Nginx TLS、可選 WAF、僅開放必要 path |
-| 身分 | 見 `Advance.md` 認證；服務對服務用短效 token |
+| 身分 | OIDC／SSO + JWT；WebSocket 連線校驗；服務對服務用短效 token／mTLS |
 | 應用 | JSON schema 驗證、WS 連線上限 |
 | 資料 | DB 內網、備份加密、最少欄位暴露給雲 |
 | 供應鏈 | CI 掃描 + 簽章映像才可進船 |
@@ -193,8 +189,6 @@ flowchart TB
 ---
 
 ## 6. HA 設計（架構層摘要）
-
-> 與「現行需求如何落地 HA」的完整敘述見 [Advance.md](./Advance.md)。此處只放架構視圖。
 
 ```mermaid
 flowchart TB
@@ -223,9 +217,9 @@ flowchart TB
 |------|---------|
 | Nginx | 至少 2 節點 + LB／VIP；設定熱重載 |
 | AP（無狀態 REST） | 水平擴展；LB 輪詢 |
-| AP（WebSocket + ROS） | 見 Advance：黏性工作階段或「單活躍 Bridge + Standby」 |
+| AP（WebSocket + ROS） | 黏性工作階段，或「單活躍 Bridge + Standby」避免 WS 狀態分裂 |
 | DB | PostgreSQL 主備（streaming）+ 自動 failover（Patroni／雲托管） |
-| Publisher | 主動／備援 Node；備援冷待命或雙發需防重複（訊息去重） |
+| Publisher | 主動／備援 Node；同一時間僅一節點發佈，避免雙活躍交錯軌跡 |
 
 ---
 
@@ -239,14 +233,3 @@ flowchart TB
 | 政策與設定下發 | Nginx 地端入口（可選） |
 | 冷存檔／長期分析（選） | 部署 Agent、本機日誌緩衝 |
 
-**反例（不建議）：** 把 ROS Publisher 放到公有雲再回推船端座標——延遲與斷線會直接打穿「實時路徑監控」體驗。
-
----
-
-## 8. 面試口述稿（約 90 秒）
-
-1. **資料面**：船端 ROS 5Hz 出 NavSatFix，地端 FastAPI 轉 JSON，經 Nginx WebSocket 到地圖。
-2. **雲地面**：即時在船、營運與交付在雲；DB 內網、白名單同步。
-3. **安全**：分區 + TLS + 簽章映像 + 稽核，形成縱深防禦。
-4. **HA**：Nginx／AP／DB 分層高可用；WS+ROS 用親和或主備，避免雙活躍搶 Topic。
-5. **交付**：CI 過 Quality／Security／Safety 門檻後，Agent 拉簽章映像上艦。
