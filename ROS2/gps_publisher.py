@@ -13,10 +13,21 @@ from sensor_msgs.msg import NavSatFix, NavSatStatus
 from std_msgs.msg import Header
 
 
+# 與 Backend GPS_path_data / GpsPathPoint 欄位約定一致（不依賴 pydantic）
+REQUIRED_CSV_HEADERS = frozenset({"latitude", "longitude"})
+
+
 def load_points(csv_path: Path) -> list[tuple[float, float]]:
     points: list[tuple[float, float]] = []
     with csv_path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        headers = set(reader.fieldnames or ())
+        missing = REQUIRED_CSV_HEADERS - headers
+        if missing:
+            raise SystemExit(
+                f"CSV missing required headers {sorted(REQUIRED_CSV_HEADERS)}; "
+                f"missing={sorted(missing)} in {csv_path}"
+            )
         for row in reader:
             points.append((float(row["latitude"]), float(row["longitude"])))
     if not points:

@@ -2,11 +2,16 @@
 COMPOSE_FILE := docker/docker-compose.yml
 COMPOSE      := docker compose -f $(COMPOSE_FILE)
 
-.PHONY: help up up-d down build logs ps restart stop
+FRONTEND_DIR  := Frontend
+VITE_WS_URL   ?= ws://localhost:8000/ws
+FRONTEND_PORT ?= 8080
+
+.PHONY: help up up-d down build logs ps restart stop \
+	frontend vue-build frontend-preview
 
 help: ## 顯示可用目標
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 up: ## 建置並前景啟動（Publisher + Backend + Frontend）
 	$(COMPOSE) up --build
@@ -31,3 +36,15 @@ restart: ## 重啟全部服務
 
 stop: ## 停止服務（保留容器）
 	$(COMPOSE) stop
+
+# --- 本機 Vue dist（不經 Docker；WS 預設連 localhost:8000）---
+
+vue-build: ## 安裝依賴並產出 Frontend/dist
+	cd $(FRONTEND_DIR) && npm install && \
+		VITE_WS_URL=$(VITE_WS_URL) npm run build
+
+vue-preview: ## 服務既有 dist（需先 vue-build）
+	cd $(FRONTEND_DIR) && npx vite preview --host --port $(FRONTEND_PORT)
+
+frontend: vue-build ## 建置 dist 並本機啟動（http://localhost:8080）
+	cd $(FRONTEND_DIR) && npx vite preview --host --port $(FRONTEND_PORT)
