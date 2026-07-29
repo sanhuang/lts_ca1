@@ -48,6 +48,10 @@ services:
         # 瀏覽器在宿主機開啟，故 WS 指宿主映射埠
         VITE_WS_URL: ws://localhost:8000/ws
         VITE_APP_ORIGIN: http://localhost:8080
+        # 地圖初始／標定座標（對齊 path_data.csv 首點；可改）
+        VITE_INIT_LAT: "25.0330"
+        VITE_INIT_LON: "121.5654"
+        VITE_INIT_ZOOM: "16"
     image: lts-map:local
     container_name: lts-map
     ports:

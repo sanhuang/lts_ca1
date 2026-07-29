@@ -5,9 +5,13 @@ COMPOSE      := docker compose -f $(COMPOSE_FILE)
 FRONTEND_DIR  := Frontend
 VITE_WS_URL   ?= ws://localhost:8000/ws
 FRONTEND_PORT ?= 8080
+# 可覆寫：make frontend VITE_INIT_LAT=25.0330 VITE_INIT_LON=121.5654
+VITE_INIT_LAT ?= 25.0330
+VITE_INIT_LON ?= 121.5654
+VITE_INIT_ZOOM ?= 16
 
 .PHONY: help up up-d down build logs ps restart stop \
-	frontend vue-build frontend-preview
+	frontend vue-build vue-preview
 
 help: ## 顯示可用目標
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -41,7 +45,11 @@ stop: ## 停止服務（保留容器）
 
 vue-build: ## 安裝依賴並產出 Frontend/dist
 	cd $(FRONTEND_DIR) && npm install && \
-		VITE_WS_URL=$(VITE_WS_URL) npm run build
+		VITE_WS_URL=$(VITE_WS_URL) \
+		VITE_INIT_LAT=$(VITE_INIT_LAT) \
+		VITE_INIT_LON=$(VITE_INIT_LON) \
+		VITE_INIT_ZOOM=$(VITE_INIT_ZOOM) \
+		npm run build
 
 vue-preview: ## 服務既有 dist（需先 vue-build）
 	cd $(FRONTEND_DIR) && npx vite preview --host --port $(FRONTEND_PORT)
