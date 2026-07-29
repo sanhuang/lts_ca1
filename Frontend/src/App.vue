@@ -45,7 +45,7 @@ const startLon = ref<number | null>(null);
 const mapHint = computed(() =>
   pickMode.value
     ? "點地圖標定初始座標（Esc 取消）"
-    : "可開啟「標定」後點地圖設初始位置",
+    : "標定後航跡會相對平移到該點起跑（不改 ROS 實際發射座標）",
 );
 
 const startCoordsText = computed(() => {
@@ -62,6 +62,30 @@ let ws: WebSocket | null = null;
 let reconnectTimer: number | undefined;
 let intentionalClose = false;
 let viewedOnce = false;
+/** 標定後第一筆 raw GNSS；之後以相對位移疊到標定點（不改 ROS 發射內容） */
+let rebaseOrigin: { lat: number; lon: number } | null = null;
+
+function resetTrackLayers() {
+  path.splice(0, path.length);
+  marker?.remove();
+  polyline?.remove();
+  marker = null;
+  polyline = null;
+}
+
+/** 有標定時：把 raw 航跡平移，使「基準點」落在 start；無標定則原樣顯示 */
+function toDisplayLatLng(rawLat: number, rawLon: number): L.LatLngExpression {
+  if (startLat.value == null || startLon.value == null) {
+    return [rawLat, rawLon];
+  }
+  if (!rebaseOrigin) {
+    rebaseOrigin = { lat: rawLat, lon: rawLon };
+  }
+  return [
+    startLat.value + (rawLat - rebaseOrigin.lat),
+    startLon.value + (rawLon - rebaseOrigin.lon),
+  ];
+}
 
 function loadStoredStart(): { lat: number; lon: number } | null {
   try {
@@ -116,23 +140,14 @@ function upsertStartMarker() {
   }
 }
 
-function seedPathFromStart() {
-  if (!map || startLat.value == null || startLon.value == null) return;
-  const ll: L.LatLngExpression = [startLat.value, startLon.value];
-  if (path.length === 0) {
-    path.push(ll);
-    ensureLayers(ll);
-    polyline?.setLatLngs(path);
-    marker?.setLatLng(ll);
-  }
-}
-
 function setStart(lat: number, lon: number) {
   startLat.value = lat;
   startLon.value = lon;
+  // 換標定點：清空畫面軌跡，下一筆 GNSS 重新當基準再平移
+  rebaseOrigin = null;
+  resetTrackLayers();
   upsertStartMarker();
-  seedPathFromStart();
-  if (map && !viewedOnce) {
+  if (map) {
     map.setView([lat, lon], initZoom);
     viewedOnce = true;
   }
@@ -142,6 +157,8 @@ function setStart(lat: number, lon: number) {
 function clearStart() {
   startLat.value = null;
   startLon.value = null;
+  rebaseOrigin = null;
+  resetTrackLayers();
   startMarker?.remove();
   startMarker = null;
   persistStart();
@@ -180,7 +197,7 @@ function applyFix(data: GnssFixData) {
   const lon = Number(data.longitude);
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
 
-  const ll: L.LatLngExpression = [lat, lon];
+  const ll = toDisplayLatLng(lat, lon);
   path.push(ll);
   if (path.length > MAX_PATH_POINTS) {
     path.splice(0, path.length - MAX_PATH_POINTS);
