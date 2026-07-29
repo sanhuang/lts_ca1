@@ -1,0 +1,116 @@
+# --- OS ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# --- Editor / IDE ---
+.idea/
+.vscode/
+*.code-workspace
+.cursor/
+!.cursor/rules/
+
+# --- Env / secrets / local overrides ---
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-wheel-metadata/
+pip-log.txt
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.envrc
+
+# Test / type / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.cache/
+coverage.xml
+*.cover
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# --- Vue 3 / Node / Vite ---
+node_modules/
+Frontend/dist/
+Frontend/dist-ssr/
+*.tsbuildinfo
+
+# Vite / npm / yarn / pnpm caches & logs
+.vite/
+.turbo/
+.npm/
+.yarn/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Optional lockfile editors / package manager state
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# --- Docker / compose local ---
+*.log
+docker-compose.override.yml
+
+# --- Misc temp ---
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.orig
+.parcel-cache/
+
+# --- Local module docs (not tracked) ---
+Backend/README.md
+Frontend/README.md
+ROS2/README.md

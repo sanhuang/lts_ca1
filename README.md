@@ -54,9 +54,9 @@
       3. 生成meraid架構圖描述資料流與[png]系統元件架構圖
 2. 個人化技能, 建立專案架構
    1. pydantic資料模型：
-      1. [GNSS_data]
-      2. [data_transfer_formatting]
-      3. [GPS_path_data]
+      1. [GNSS_data] → `GnssFixMessage`
+      2. [data_transfer_formatting] → `WsEnvelope`（`{ type: "gnss_fix", data }`）
+      3. [GPS_path_data] → `GpsPathPoint` / `GpsPathData`（CSV `latitude`,`longitude`）
    2. Dockerfile
       1. Publisher(ROS2模擬)
       2. Backend(接收與發送)
