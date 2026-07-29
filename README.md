@@ -156,5 +156,5 @@ docker run --rm -p 8000:8000 --network lts_ca1_ltsnet -e ROS_DOMAIN_ID=0 lts-api
 docker run --rm -p 8080:80 lts-map:local
 ```
 
-> 網路名稱以 `docker network ls` 為準（compose 專案前綴可能不同）。日常開發優先用 `docker compose ... up`。  
+> 網路名稱以 `docker network ls` 為準（compose 專案前綴可能不同）。日常開發優先用 `docker compose ... up`。
 > 更完整說明見 [`docker/README.md`](./docker/README.md)。
