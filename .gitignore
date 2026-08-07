@@ -118,3 +118,7 @@ ROS2/README.md
 # --- Local DevOps notes (not tracked) ---
 DevOps/Advance.md
 DevOps/interview-notes.md
+
+# Deploy secrets / runtime inventory
+Deploy/ec2/.secrets/
+Deploy/**/INVENTORY.env

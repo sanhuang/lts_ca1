@@ -81,6 +81,8 @@
 
 ROS Publisher、Redis／RabbitMQ／DB 僅內網（compose／VPN），不公開網域。前端建置設 `VITE_WS_URL=wss://lts-api.personalwork.tw/ws`（見 `Frontend/README.md`）。
 
+正式雲地部署（EC2 + NetBird + S3／CloudFront）、驗收與腳本見 [`Deploy/README.md`](./Deploy/README.md)；成本估算見 [`cost.md`](./cost.md)。架構／步驟摘要見 [`todo.md`](./todo.md)。
+
 ---
 
 ## Docker 使用說明

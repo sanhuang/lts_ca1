@@ -1,0 +1,17 @@
+# FastAPI Bridge public edge → NetBird peer (Mac Docker :8000)
+# Peer FQDN from `netbird status` on the Mac host.
+
+lts-api.personalwork.tw {
+	encode gzip
+	reverse_proxy tazs-m1pro.netbird.cloud:8000 {
+		# WebSocket Upgrade (Caddy enables by default; timeouts suited to long-lived /ws)
+		transport http {
+			read_timeout 0
+			write_timeout 0
+			dial_timeout 10s
+		}
+		header_up Host {host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Real-IP {remote_host}
+	}
+}
